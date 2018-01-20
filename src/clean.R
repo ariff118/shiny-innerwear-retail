@@ -1,4 +1,5 @@
 library(tidyverse)
+library(forcats)
 
 # read in data
 files <-  list.files(path = "../data/raw/", pattern = "*.csv")
@@ -125,32 +126,78 @@ df$category <- df$product_category %>%
                        "split hem tunic" = "sport",
                        "summer" = "bra",
                        "sleep wear" = "sleepwear",
-                       "classic" = "bra"))
+                       "classic" = "bra",
+                       "bride" = "bridal"))
 
 ## treat "chill" and "collections" categories
-
 df <- df %>% 
-  mutate(last_word = ifelse(df$category %in% c("collections", "chill"), word(df$product_name,-4, -1), "NA"))
-df$last_word <-  as.factor(df$last_word)
-# big_categories <- data.frame(levels(df$last_word))
+  mutate(last_word_chill = ifelse(category == "chill", word(df$product_name,-4, -1), "NA"),
+         last_word_collections = ifelse(category == "collections", word(df$product_name,-4, -1), "NA"))
 
-panties <- str_which(df$last_word, pattern = ".*G-.*|.*V-.*|.*Panty.*|.*Hipster.*|.*Thong.*|.*Boyshort.*|.*Teddy.*|.*Tanga.*|.*Brief.*|.*Panties.*|.*Tap Pant.*|.*thong.*")
-bra <- str_which(df$last_word, pattern = ".*Bra.*|.*Bralette.*|.*Bandeau.*|.*Crop.*")
-bride <- str_which(df$last_word, pattern = ".*Bride.*")
-sleepwear <- str_which(df$last_word, pattern = ".*Chemise.*|.*Cami.*|.*Top.*|.*T-Shirt.*|.*Slip.*|.*Sleep.*|.*Tank.*|.*Robe.*|.*Gown.*|.*Pajamas.*|.*Short.*|.*Pant.*")
-accessories <- str_which(df$last_word, pattern = ".*Sock.*|.*Garter.*|.*Cuff.*|.*Plaything.*|.*Leg.*|Set with Gift Box")
-swimwear <- str_which(df$last_word, pattern = ".*Bikini.*")
-lingerie <- str_which(df$last_word, pattern = ".*Bodysuit.*|.*Slit.*")
+### "chill" category
+df$last_word_chill <- as.factor(df$last_word_chill)
+big_categories <- data.frame(levels(df$last_word_chill))
+
+panties <- str_which(df$last_word_chill, pattern = ".*G-.*|.*V-.*|.*Panty.*|.*Hipster.*|.*Thong.*|.*Boyshort.*|.*Teddy.*|.*Tanga.*|.*Brief.*|.*Panties.*|.*Tap Pant.*|.*thong.*")
+bra <- str_which(df$last_word_chill, pattern = ".*Bra.*|.*Bralette.*|.*Bandeau.*|.*Crop.*")
+bride <- str_which(df$last_word_chill, pattern = ".*Bride.*")
+sleepwear <- str_which(df$last_word_chill, pattern = ".*Chemise.*|.*Cami.*|.*Top.*|.*T-Shirt.*|.*Slip.*|.*Sleep.*|.*Tank.*|.*Robe.*|.*Gown.*|.*Pajamas.*|.*Short.*|.*Pant.*")
+accessories <- str_which(df$last_word_chill, pattern = ".*Sock.*|.*Garter.*|.*Cuff.*|.*Plaything.*|.*Leg.*|Set with Gift Box")
+swimwear <- str_which(df$last_word_chill, pattern = ".*Bikini.*")
+lingerie <- str_which(df$last_word_chill, pattern = ".*Bodysuit.*|.*Slit.*")
 
 df$category[panties] <- "panties"
 df$category[bra] <- "bra"
-df$category[bride] <- "bride"
+df$category[bride] <- "bridal"
 df$category[sleepwear] <- "sleepwear"
 df$category[accessories] <- "accessories"
 df$category[swimwear] <- "swimwear"
 df$category[lingerie] <- "lingerie"
 
+### "collections" category
+df$last_word_collections <- as.factor(df$last_word_collections)
+big_categories_2 <- data.frame(levels(df$last_word_collections))
+
+panties2 <- str_which(df$last_word_collections, pattern = ".*G-.*|.*V-.*|.*Panty.*|.*Hipster.*|.*Thong.*|.*Boyshort.*|.*Teddy.*|.*Tanga.*|.*Brief.*|.*Panties.*|.*Tap Pant.*|.*thong.*")
+bra2 <- str_which(df$last_word_collections, pattern = ".*Bra.*|.*Bralette.*|.*Bandeau.*|.*Crop.*")
+bride2 <- str_which(df$last_word_collections, pattern = ".*Bride.*")
+sleepwear2 <- str_which(df$last_word_collections, pattern = ".*Chemise.*|.*Cami.*|.*Top.*|.*T-Shirt.*|.*Slip.*|.*Sleep.*|.*Tank.*|.*Robe.*|.*Gown.*|.*Pajamas.*|.*Short.*|.*Pant.*")
+accessories2 <- str_which(df$last_word_collections, pattern = ".*Sock.*|.*Garter.*|.*Cuff.*|.*Plaything.*|.*Leg.*|Set with Gift Box")
+swimwear2 <- str_which(df$last_word_collections, pattern = ".*Bikini.*")
+lingerie2 <- str_which(df$last_word_collections, pattern = ".*Bodysuit.*|.*Slit.*")
+
+df$category[panties2] <- "panties"
+df$category[bra2] <- "bra"
+df$category[bride2] <- "bridal"
+df$category[sleepwear2] <- "sleepwear"
+df$category[accessories2] <- "accessories"
+df$category[swimwear2] <- "swimwear"
+df$category[lingerie2] <- "lingerie"
+
 ### check final category list after cleaning
 df$category <- as.factor(df$category)
 grouped_category <- data.frame(levels(df$category))
 
+## drop NAs from "mrp" since one of the main goal is to look at price range
+df_dropna <- df %>% drop_na(mrp)
+df_dropna <- df_dropna %>% 
+  filter(!category%in% c("chill", "collections")) %>% 
+  select(-last_word_chill, -last_word_collections, 
+         -product_category, -total_sizes, -available_size,
+         -style_attributes, -description)
+
+## drop unused factors from category
+df_dropna$category <- fct_drop(df_dropna$category, only = "collections")
+df_dropna$category <- fct_drop(df_dropna$category, only = "chill")
+
+levels(df_dropna$category)
+
+## color
+df_dropna$color <- df_dropna$color %>% 
+  str_to_lower()
+
+df_dropna$color <- as.factor(df_dropna$color)
+color_list <- data.frame(levels(df_dropna$color))  
+
+df$color_group <- df$color %>% 
+  str_replace_all(., c(".*bra.*" = "bra"))
