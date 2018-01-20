@@ -10,7 +10,7 @@ raw_df <-  do.call(rbind, lapply(file_path, function(x) read.csv(x, row.names = 
 df <- raw_df
 
 # clean data
-## mrp and price
+## mrp, price, pct_sales
 df$mrp <- df$mrp %>% 
   gsub("usd", "", ., ignore.case = TRUE) %>% 
   trimws(., which = "right")
@@ -20,6 +20,9 @@ df$price <- df$price %>%
   gsub("usd", "", ., ignore.case = TRUE) %>% 
   trimws(., which = "right")
 df$price <- as.numeric(df$mrp)
+
+df <- df %>% 
+  mutate(pct_sales = (mrp-price)/price)
 
 ## brand and retailers
 df$retailer <- as.factor(df$retailer)
@@ -236,28 +239,27 @@ df$rating <- as.numeric(df$rating)
 df$review_count <- as.integer(df$review_count)
 df$brand <- as.factor(df$brand)
 
-## transform missing data in rating and view count
-df$rating[is.na(df$rating)] <- round(mean(df$rating, na.rm = TRUE), 2)
-df$review_count[is.na(df$review_count)] <- round(mean(df$review_count, na.rm = TRUE),0)
+## transform missing data in mrp, price, rating, view count
+df$mrp[is.na(df$mrp)] <- round(mean(df$mrp, na.rm = TRUE), 2)
+df$price[is.na(df$price)] <- round(mean(df$price, na.rm = TRUE), 2)
+df$rating[is.na(df$rating)] <- min(df$rating, na.rm = TRUE)
+df$review_count[is.na(df$review_count)] <- min(df$review_count, na.rm = TRUE)
 
 # getting final dataframe
 ## drop NAs from "mrp" since one of the main goal is to look at price range
-df_dropna <- df %>% drop_na(mrp)
-df_dropna <- df_dropna %>% 
+df <- df %>% 
   filter(!category%in% c("chill", "collections")) %>% 
   select(-last_word_chill, -last_word_collections, 
          -product_category, -total_sizes, -available_size,
          -style_attributes, -description)
 
 ## mutate new column - percentage of sales
-df_final <- df_dropna %>% 
-  mutate(pct_sales = (mrp-price)/mrp) %>% 
+df_final <- df %>% 
   select(product_name, mrp, price, pct_sales, category, color_group, brand, rating, review_count)
 
 
 # output clean data
 write_csv(df_final, "../data/cleaned/cleaned_shiny.csv")
-write_csv(df_dropna, "../data/cleaned/cleaned_full.csv")
 
 
 
