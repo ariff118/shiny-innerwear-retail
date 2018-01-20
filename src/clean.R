@@ -16,7 +16,6 @@ df$mrp <- df$mrp %>%
   trimws(., which = "right")
 df$mrp <- as.numeric(df$mrp)
 
-
 df$price <- df$price %>% 
   gsub("usd", "", ., ignore.case = TRUE) %>% 
   trimws(., which = "right")
@@ -138,21 +137,8 @@ df <- df %>%
 df$last_word_chill <- as.factor(df$last_word_chill)
 big_categories <- data.frame(levels(df$last_word_chill))
 
-panties <- str_which(df$last_word_chill, pattern = ".*G-.*|.*V-.*|.*Panty.*|.*Hipster.*|.*Thong.*|.*Boyshort.*|.*Teddy.*|.*Tanga.*|.*Brief.*|.*Panties.*|.*Tap Pant.*|.*thong.*")
 bra <- str_which(df$last_word_chill, pattern = ".*Bra.*|.*Bralette.*|.*Bandeau.*|.*Crop.*")
-bride <- str_which(df$last_word_chill, pattern = ".*Bride.*")
-sleepwear <- str_which(df$last_word_chill, pattern = ".*Chemise.*|.*Cami.*|.*Top.*|.*T-Shirt.*|.*Slip.*|.*Sleep.*|.*Tank.*|.*Robe.*|.*Gown.*|.*Pajamas.*|.*Short.*|.*Pant.*")
-accessories <- str_which(df$last_word_chill, pattern = ".*Sock.*|.*Garter.*|.*Cuff.*|.*Plaything.*|.*Leg.*|Set with Gift Box")
-swimwear <- str_which(df$last_word_chill, pattern = ".*Bikini.*")
-lingerie <- str_which(df$last_word_chill, pattern = ".*Bodysuit.*|.*Slit.*")
-
-df$category[panties] <- "panties"
 df$category[bra] <- "bra"
-df$category[bride] <- "bridal"
-df$category[sleepwear] <- "sleepwear"
-df$category[accessories] <- "accessories"
-df$category[swimwear] <- "swimwear"
-df$category[lingerie] <- "lingerie"
 
 ### "collections" category
 df$last_word_collections <- as.factor(df$last_word_collections)
@@ -178,6 +164,83 @@ df$category[lingerie2] <- "lingerie"
 df$category <- as.factor(df$category)
 grouped_category <- data.frame(levels(df$category))
 
+## drop unused factors from category
+df$category <- fct_drop(df$category, only = "collections")
+df$category <- fct_drop(df$category, only = "chill")
+
+## color
+df$color <- df$color %>% 
+  str_to_lower()
+
+df$color <- as.factor(df$color)
+color_list <- data.frame(levels(df$color))  
+
+df$color_group <- df$color %>% 
+  str_replace_all(., c(".*white.*" = "white",
+                       ".*turquoise.*" = "turquoise",
+                       ".*pink.*" = "pink",
+                       ".*teal.*" = "teal",
+                       ".*navy.*" = "navy",
+                       ".*berry.*" = "berry",
+                       ".*green.*" = "green",
+                       ".*red.*" = "red",
+                       ".*blue.*" = "blue",
+                       ".*cobalt.*" = "blue",
+                       ".*buff.*" = "nude",
+                       ".*charcoal.*" = "grey",
+                       ".*grey.*" = "grey",
+                       ".*gray.*" = "grey",
+                       ".*coral.*" = "coral",
+                       ".*crystal.*" = "no color",
+                       ".*burgundy.*" = "purple",
+                       ".*plum.*" = "purple",
+                       ".*slate.*" = "multiple colors",
+                       "be pretty" = "multiple colors",
+                       ".*mint.*" = "green",
+                       "fresh bright" = "multiple colors",
+                       "heather frost" = "multiple colors",
+                       ".*hush.*" = "nude",
+                       ".*jade.*" = "green",
+                       ".*kissed.*" = "multiple colors",
+                       "light aglow" = "multiple colors",
+                       "darkness falls" = "black",
+                       ".*multi.*" = "multiple colors",
+                       ".*ocean.*" = "blue",
+                       ".*nude.*" = "nude",
+                       ".*oatmeal.*" = "nude",
+                       ".*olive.*" = "olive",
+                       ".*purple.*" = "purple",
+                       "rose" = "red",
+                       "sienna" = "nude",
+                       "rio" = "multiple colors",
+                       ".*muslin.*" = "nude",
+                       ".*peach.*" = "nude",
+                       "stargaze" = "multiple colors",
+                       "stone" = "multiple colors",
+                       "tangerine crush" = "coral",
+                       ".*black.*" = "black",
+                       ".*berry.*" = "purple",
+                       "dark heather" = "multiple colors",
+                       "light cashew" = "nude",
+                       "light heather" = "multiple colors",
+                       "luminous fuchsia" = "purple",
+                       "maroon lagoon" = "multiple colors",
+                       "medium heather" = "multiple colors",
+                       "radiance" = "multiple colors",
+                       "silver shadow" = "multiple colors",
+                       "ur cheeky" = "multiple colors",
+                       "valentine" = "red"))
+
+## transform data type
+df$rating <- as.numeric(df$rating)
+df$review_count <- as.integer(df$review_count)
+df$brand <- as.factor(df$brand)
+
+## transform missing data in rating and view count
+df$rating[is.na(df$rating)] <- round(mean(df$rating, na.rm = TRUE), 2)
+df$review_count[is.na(df$review_count)] <- round(mean(df$review_count, na.rm = TRUE),0)
+
+# getting final dataframe
 ## drop NAs from "mrp" since one of the main goal is to look at price range
 df_dropna <- df %>% drop_na(mrp)
 df_dropna <- df_dropna %>% 
@@ -186,18 +249,15 @@ df_dropna <- df_dropna %>%
          -product_category, -total_sizes, -available_size,
          -style_attributes, -description)
 
-## drop unused factors from category
-df_dropna$category <- fct_drop(df_dropna$category, only = "collections")
-df_dropna$category <- fct_drop(df_dropna$category, only = "chill")
+## mutate new column - percentage of sales
+df_final <- df_dropna %>% 
+  mutate(pct_sales = (mrp-price)/mrp) %>% 
+  select(product_name, mrp, price, pct_sales, category, color_group, brand, rating, review_count)
 
-levels(df_dropna$category)
 
-## color
-df_dropna$color <- df_dropna$color %>% 
-  str_to_lower()
+# output clean data
+write_csv(df_final, "../data/cleaned/cleaned_shiny.csv")
+write_csv(df_dropna, "../data/cleaned/cleaned_full.csv")
 
-df_dropna$color <- as.factor(df_dropna$color)
-color_list <- data.frame(levels(df_dropna$color))  
 
-df$color_group <- df$color %>% 
-  str_replace_all(., c(".*bra.*" = "bra"))
+
