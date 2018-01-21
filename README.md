@@ -28,7 +28,7 @@ Note that in the above example, "physical disability" being an important variabl
 
 ## Section 4: Description of your app & sketch 
 
-![](ShinyAppSketch.jpg "App Sketch")
+![](ShinyAppSketch.jpg)
 
 > The app contains a landing page that shows price range, total product per brand, total rating, average rating, and percentage of sales (horizontal box plot, horizontal bar chart) of each product category, colored coded according to brand. The landing page also include the filtered data table, as well as download button for each visualization and data table.
 > 
