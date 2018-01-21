@@ -11,7 +11,7 @@
 library(shiny)
 library(tidyverse)
 
-df <- read_csv("../data/cleaned/cleaned_shiny.csv")
+df <- read_csv("../../data/cleaned/cleaned_shiny.csv")
 
 #===================#
 
@@ -28,7 +28,7 @@ ui <- fluidPage(
        
        uiOutput('categoryOutput'),
        
-       uiOutput('colorInput'),
+       uiOutput('colorOutput'),
        
        sliderInput("ratingInput", "Average Rating Range",
                    min = 1,
@@ -38,18 +38,24 @@ ui <- fluidPage(
        sliderInput("priceInput", "Price Range",
                    min = 1,
                    max = 100,
-                   value = c(20, 50), sep = ""),
+                   value = c(20, 50), sep = "")
        
-       radioButtons("orderbyInput", "Order by",
-                    choices = c("Brand", "Price", "Percentage Sales"))
+       # radioButtons("orderbyInput", "Order by",
+       #              choices = c("Brand", "Price", "Percentage Sales"))
        
      ),
      
      # Show a plot of the generated distribution
      mainPanel(
-       plotOutput("coolPlot"),
+       plotOutput("total_product"),
        br(), br(),
-       dataTableOutput("results")
+       plotOutput("price_range"),
+       br(), br(),
+       plotOutput("average_rating"),
+       br(), br(),
+       # plotOutput("total_reviews"),
+       # br(), br(),
+       dataTableOutput("filtered_data")
      )
    )
 )
@@ -57,24 +63,13 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  filtered <- reactive({
-    df %>% 
-      filter(brand %in% c(input$brandInput),
-             category %in% c(input$categoryInput),
-             color_group %in% c(input$colorInput),
-             rating >= input$ratingInput[1],
-             rating <= input$ratingInput[2],
-             price >= input$priceInput[1],
-             price <= input$priceInput[2]
-      )
-  })
-   
+  
   output$brandOutput <- renderUI({
-     selectInput('brandInput', 'Select Brand',
-                        sort(unique(df$brand_name)),
-                        selected = c("Macys-Hanky Panky", "Amazon-Hanky Panky"),
-                        multiple = TRUE)
-   })
+    selectInput('brandInput', 'Select Brand',
+                sort(unique(df$brand_name)),
+                selected = c("Macys-Hanky Panky", "Amazon-Hanky Panky"),
+                multiple = TRUE)
+  })
   
   output$categoryOutput <- renderUI({
     selectInput('categoryInput', 'Select Product Category',
@@ -89,6 +84,62 @@ server <- function(input, output) {
                 selected = c("red", "dragonfruit", "bright marine"),
                 multiple = TRUE)
   })
+  
+  filtered <- reactive({
+    df %>% 
+      filter(brand_name %in% c(input$brandInput),
+             category %in% c(input$categoryInput),
+             color_group %in% c(input$colorInput),
+             rating >= input$ratingInput[1],
+             rating <= input$ratingInput[2],
+             price >= input$priceInput[1],
+             price <= input$priceInput[2]
+      )
+  })
+   
+  
+  output$total_product <- renderPlot(
+    {p1 <- ggplot(filtered(),
+                 aes(brand_name, color = brand_name)) +
+          geom_bar() + 
+          labs(title = "Total Product Per Brand",
+               y = "products") +
+          scale_color_discrete(name = "") + 
+          coord_flip() + 
+          theme_bw()
+    return(p1)
+    }
+  )
+  
+  output$price_range <- renderPlot(
+    {p2 <- ggplot(filtered(),
+                 aes(brand_name, price, color = brand_name)) +
+      geom_boxplot() + 
+      labs(title = "Price Range",
+           y = "USD") + 
+      scale_color_discrete(name = "") + 
+      coord_flip() + 
+      theme_bw()
+    return(p2)
+    }
+  )
+  
+  output$average_rating <- renderPlot(
+    {p3 <- ggplot(filtered(),
+                  aes(brand_name, mean(rating), color = brand_name)) +
+          geom_bar(stat = "identity") +
+      scale_color_discrete(name = "") +
+      labs(title = "Average Rating") + 
+      coord_flip() + 
+      theme_bw()
+    return(p3)
+    }
+  )
+  
+  output$filtered_data <- renderDataTable(filtered(),
+                                          options = list(pageLength = 5))
+  
+  
 }
 
 # Run the application 
