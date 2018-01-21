@@ -37,7 +37,35 @@ df$retailer <- df$retailer %>% recode("Ae US" = "American Eagle",
                        "Topshop US" = "Topshop")
 as.character <- as.character(df$retailer)
 
-df$brand <- paste(df$brand_name, df$retailer, sep = "-")
+df$brand_name <- df$brand_name %>% 
+  str_to_lower()
+
+df$brand_name <- df$brand_name %>% 
+  str_replace_all(., c(".*aeo.*" = "American Eagle",
+                       ".*aerie.*" = "AERIE",
+                       ".*temp.*" = "Wacoal",
+                       ".*calvin.*" = "Calvin Klein",
+                       ".*hanky.*" = "Hanky Panky",
+                       ".*compression.*" = "Others",
+                       ".*creative.*" = "Others",
+                       ".*nintendo.*" = "Others",
+                       ".*lucky.*" = "Others",
+                       "nordstrom lingerie" = "Nordstrom",
+                       ".*wacoal.*" = "Wacoal",
+                       "us topshop" = "Topshop",
+                       ".*secret.*" = "Victoria Secret",
+                       ".*vanity.*" = "Others",
+                       "s" = "Others",
+                       ".*hair.*" = "Others",
+                       ".*fila.*" = "Others"))
+
+df$brand_name <- as.factor(df$brand_name)
+df$brand_name <- df$brand_name %>% recode("Other brandOthers" = "Others",
+                                          "NordOtherstrom" = "Nordstrom",
+                                          "OtherOthers" = "Others",
+                                          "TopOthershop" = "Topshop")
+
+df$brand_name <- paste(df$retailer, df$brand_name, sep = "-")
 
 ## category
 df$product_category <- as.factor(df$product_category)
@@ -237,7 +265,6 @@ df$color_group <- df$color %>%
 ## transform data type
 df$rating <- as.numeric(df$rating)
 df$review_count <- as.integer(df$review_count)
-df$brand <- as.factor(df$brand)
 
 ## transform missing data in mrp, price, rating, view count
 df$mrp[is.na(df$mrp)] <- round(mean(df$mrp, na.rm = TRUE), 2)
@@ -255,7 +282,7 @@ df <- df %>%
 
 ## mutate new column - percentage of sales
 df_final <- df %>% 
-  select(product_name, mrp, price, pct_sales, category, color_group, brand, rating, review_count)
+  select(product_name, mrp, price, pct_sales, category, color_group, brand_name, rating, review_count)
 
 
 # output clean data
