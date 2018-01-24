@@ -44,17 +44,27 @@ df <- raw_df
 
 # clean data
 ## mrp, price, pct_sales
-df$mrp_converted <- df$mrp %>% 
-  str_extract(.,"[0-9]*\\.[0-9]*")%>% 
-  trimws(., which = "right")
-df$mrp_converted <- as.numeric(df$mrp_converted)
+df$mrp <- df$mrp %>% 
+  str_to_lower()
 
-df$price_converted <- df$price %>% 
-  str_extract(.,"[0-9]*\\.[0-9]*")%>% 
-  trimws(., which = "right")
+df$price <- df$price %>% 
+  str_to_lower()
+
+### price
+df$price_converted <- ifelse(str_detect(df$price, "now"), 
+                             str_extract(gsub(".*now(.*)", "\\1", df$price), "[0-9]+[.]?[0-9]*"), 
+                             ifelse(str_detect(df$price, "-"), str_extract(gsub(".*-(.*)", "\\1", df$price), "[0-9]+[.]?[0-9]*"), 
+                             str_extract(df$price, "[0-9]+[.]?[0-9]*")
+                             ))
 df$price_converted <- as.numeric(df$price_converted)
 
-df <- df %>% 
+### mrp
+df$mrp_converted <- ifelse(str_detect(df$mrp, "-"), 
+                           str_extract(gsub(".*-(.*)", "\\1", df$mrp), "[0-9]+[.]?[0-9]*"), 
+                           str_extract(df$mrp,"[0-9]+[.]?[0-9]*"))
+df$mrp_converted <- as.numeric(df$mrp_converted)
+
+df <- df %>%
   mutate(pct_sales = -1*(price_converted-mrp_converted)/mrp_converted)
 
 ## brand and retailers
