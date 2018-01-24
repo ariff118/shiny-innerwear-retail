@@ -2,27 +2,60 @@ library(tidyverse)
 library(forcats)
 
 # read in data
-files <-  list.files(path = "../data/raw/", pattern = "*.csv")
+ae <- read_csv("../data/raw/ae_com.csv")
+ae$rating <- as.numeric(ae$rating)
+ae$review_count <- as.integer(ae$review_count)
 
-file_path <- paste("../data/raw/",files, sep = "")
-raw_df <-  do.call(rbind, lapply(file_path, function(x) read.csv(x, row.names = NULL, stringsAsFactors = FALSE)))
+amz <- read_csv("../data/raw/amazon_com.csv")
+amz$rating <- as.numeric(amz$rating)
+amz$review_count <- as.integer(amz$review_count)
+
+wacoal <- read_csv("../data/raw/btemptd_com.csv")
+wacoal$rating <- as.numeric(wacoal$rating)
+wacoal$review_count <- as.integer(wacoal$review_count)
+
+ck <- read_csv("../data/raw/calvinklein_com.csv")
+ck$rating <- as.numeric(ck$rating)
+ck$review_count <- as.integer(ck$review_count)
+
+hk <- read_csv("../data/raw/hankypanky_com.csv")
+hk$rating <- as.numeric(hk$rating)
+hk$review_count <- as.integer(hk$review_count)
+
+macy <- read_csv("../data/raw/macys_com.csv")
+macy$rating <- as.numeric(macy$rating)
+macy$review_count <- as.integer(macy$review_count)
+
+nordstrom <- read_csv("../data/raw/shop_nordstrom_com.csv")
+nordstrom$rating <- as.numeric(nordstrom$rating)
+nordstrom$review_count <- as.integer(nordstrom$review_count)
+
+topshop <- read_csv("../data/raw/us_topshop_com.csv")
+topshop$rating <- as.numeric(topshop$rating)
+topshop$review_count <- as.integer(topshop$review_count)
+
+vs <- read_csv("../data/raw/victoriassecret_com.csv")
+vs$rating <- as.numeric(vs$rating)
+vs$review_count <- as.integer(vs$review_count)
+
+raw_df <- bind_rows(ae, amz, wacoal, ck, hk, macy, nordstrom, topshop, vs)
 
 df <- raw_df
 
 # clean data
 ## mrp, price, pct_sales
-df$mrp <- df$mrp %>% 
-  gsub("usd", "", ., ignore.case = TRUE) %>% 
+df$mrp_converted <- df$mrp %>% 
+  str_extract(.,"[0-9]*\\.[0-9]*")%>% 
   trimws(., which = "right")
-df$mrp <- as.numeric(df$mrp)
+df$mrp_converted <- as.numeric(df$mrp_converted)
 
-df$price <- df$price %>% 
-  gsub("usd", "", ., ignore.case = TRUE) %>% 
+df$price_converted <- df$price %>% 
+  str_extract(.,"[0-9]*\\.[0-9]*")%>% 
   trimws(., which = "right")
-df$price <- as.numeric(df$mrp)
+df$price_converted <- as.numeric(df$price_converted)
 
 df <- df %>% 
-  mutate(pct_sales = (mrp-price)/price)
+  mutate(pct_sales = -1*(price_converted-mrp_converted)/mrp_converted)
 
 ## brand and retailers
 df$retailer <- as.factor(df$retailer)
@@ -66,6 +99,16 @@ df$brand_name <- df$brand_name %>% recode("Other brandOthers" = "Others",
                                           "TopOthershop" = "Topshop")
 
 df$brand_name <- paste(df$retailer, df$brand_name, sep = "-")
+
+df <- df %>% 
+  mutate(brand = as.factor(df$brand_name))
+df$brand <- df$brand %>% recode("Nordstrom-Nordstrom" = "Nordstrom",
+                    "Victoria Secret-Victoria Secret" = "Victoria Secret",
+                    "Calvin Klein-Calvin Klein" = "Calvin Klein",
+                    "Wacoal-Wacoal" = "Wacoal",
+                    "Hanky Panky-Hanky Panky" = "Hanky Panky",
+                    "Topshop-Topshop" = "Topshop")
+
 
 ## category
 df$product_category <- as.factor(df$product_category)
@@ -161,8 +204,8 @@ df$category <- df$product_category %>%
 
 ## treat "chill" and "collections" categories
 df <- df %>% 
-  mutate(last_word_chill = ifelse(category == "chill", word(df$product_name,-4, -1), "NA"),
-         last_word_collections = ifelse(category == "collections", word(df$product_name,-4, -1), "NA"))
+  mutate(last_word_chill = ifelse(category == "chill", word(df$product_name,-3, -1), "NA"),
+         last_word_collections = ifelse(category == "collections", word(df$product_name,-3, -1), "NA"))
 
 ### "chill" category
 df$last_word_chill <- as.factor(df$last_word_chill)
