@@ -65,7 +65,7 @@ df$mrp_converted <- ifelse(str_detect(df$mrp, "-"),
 df$mrp_converted <- as.numeric(df$mrp_converted)
 
 df <- df %>%
-  mutate(pct_sales = -1*(price_converted-mrp_converted)/mrp_converted)
+  mutate(pct_sales = round((-1*(price_converted-mrp_converted)/mrp_converted),2))
 
 ## brand and retailers
 df$retailer <- as.factor(df$retailer)
@@ -217,6 +217,9 @@ df <- df %>%
   mutate(last_word_chill = ifelse(category == "chill", word(df$product_name,-3, -1), "NA"),
          last_word_collections = ifelse(category == "collections", word(df$product_name,-3, -1), "NA"))
 
+df <- df %>% 
+  mutate(extra_last_word_collections = ifelse(category == "collections", word(df$product_name,-1), "NA"))
+
 ### "chill" category
 df$last_word_chill <- as.factor(df$last_word_chill)
 big_categories <- data.frame(levels(df$last_word_chill))
@@ -243,6 +246,23 @@ df$category[sleepwear2] <- "sleepwear"
 df$category[accessories2] <- "accessories"
 df$category[swimwear2] <- "swimwear"
 df$category[lingerie2] <- "lingerie"
+
+df$extra_last_word_collections <- as.factor(df$extra_last_word_collections)
+big_categories_3 <- data.frame(levels(df$extra_last_word_collections))
+
+panties3 <- str_which(df$extra_last_word_collections, pattern = ".*G-.*|.*V-.*|.*Panty.*|.*Hipster.*|.*Thong.*|.*Boyshort.*|.*Teddy.*|.*Tanga.*|.*Brief.*|.*Panties.*|.*Tap Pant.*|.*thong.*|.*Trim.*|.*Cover.*|.*Pack.*")
+bra3 <- str_which(df$extra_last_word_collections, pattern = ".*Bra.*|.*Bralette.*|.*Bandeau.*|.*Crop.*")
+sleepwear3 <- str_which(df$extra_last_word_collections, pattern = ".*Chemise.*|.*Cami.*|.*Top.*|.*shirt.*|.*Slip.*|.*Sleep.*|.*Tank.*|.*Robe.*|.*Gown.*|.*Pajamas.*|.*Short.*|.*Pant.*|.*Romper.*")
+accessories3 <- str_which(df$extra_last_word_collections, pattern = ".*Sock.*|.*Garter.*|.*Cuff.*|.*Plaything.*|.*Leg.*|.*Box.*|.*Key.*|.*Jar.*|.*Eye.*|.*Bag.*")
+swimwear3 <- str_which(df$extra_last_word_collections, pattern = ".*Bikini.*")
+lingerie3 <- str_which(df$extra_last_word_collections, pattern = ".*Bodysuit.*|.*Slit.*|.*Plaything.*")
+
+df$category[panties3] <- "panties"
+df$category[bra3] <- "bra"
+df$category[sleepwear3] <- "sleepwear"
+df$category[accessories3] <- "accessories"
+df$category[swimwear3] <- "swimwear"
+df$category[lingerie3] <- "lingerie"
 
 ### check final category list after cleaning
 df$category <- as.factor(df$category)
@@ -282,7 +302,7 @@ df$color_group <- df$color %>%
                        "be pretty" = "multiple colors",
                        ".*mint.*" = "green",
                        "fresh bright" = "multiple colors",
-                       "heather frost" = "multiple colors",
+                       ".*heather.*" = "multiple colors",
                        ".*hush.*" = "nude",
                        ".*jade.*" = "green",
                        ".*kissed.*" = "multiple colors",
@@ -294,8 +314,9 @@ df$color_group <- df$color %>%
                        ".*oatmeal.*" = "nude",
                        ".*olive.*" = "olive",
                        ".*purple.*" = "purple",
-                       "rose" = "red",
-                       "sienna" = "nude",
+                       ".*rose.*" = "red",
+                       ".*sienna.*" = "nude",
+                       ".*peel.*" = "nude",
                        "rio" = "multiple colors",
                        ".*muslin.*" = "nude",
                        ".*peach.*" = "nude",
@@ -304,24 +325,54 @@ df$color_group <- df$color %>%
                        "tangerine crush" = "coral",
                        ".*black.*" = "black",
                        ".*berry.*" = "purple",
-                       "dark heather" = "multiple colors",
                        "light cashew" = "nude",
-                       "light heather" = "multiple colors",
-                       "luminous fuchsia" = "purple",
-                       "maroon lagoon" = "multiple colors",
-                       "medium heather" = "multiple colors",
+                       ".*fuchsia.*" = "purple",
+                       ".*lagoon.*" = "multiple colors",
                        "radiance" = "multiple colors",
                        "silver shadow" = "multiple colors",
                        "ur cheeky" = "multiple colors",
-                       "valentine" = "red"))
+                       "valentine" = "red",
+                       "2vn" = "multiple colors",
+                       ".*print.*" = "multiple colors",
+                       ".*beige.*" = "nude",
+                       ".*allure.*" = "nultiple colors",
+                       "almond blossom" = "multiple colors",
+                       ".*large.*" = "multiple colors",
+                       ".*lake.*" = "blue",
+                       ".*ivory.*" = "nude",
+                       ".*vanilla.*" = "nude",
+                       ".*chestnut.*" = "brown",
+                       "platinum combo" = "multiple colors",
+                       ".*peacoat.*" = "multiple colors",
+                       ".*night.*" = "multiple colors",
+                       ".*gardenia.*" = "nude",
+                       ".*small.*" = "multiple colors",
+                       ".*sand.*" = "nude",
+                       ".*toast.*" = "nude",
+                       ".*speak.*" = "multiple colors",
+                       ".*blithe.*" = "multiple colors",
+                       ".*cappuccino.*" = "brown",
+                       ".*taupe.*" = "purple",
+                       ".*midnight.*" = "blue",
+                       ".*logo.*" = "shape",
+                       ".*multiple.*" = "multiple colors",
+                       ".*wild.*" = "multiple colors",
+                       ".*violet.*" = "purple",
+                       ".*dot.*" = "multiple colors",
+                       ".*floral.*" = "shape",
+                       ".*brown.*" = "brown",
+                       ".*scandal.*" = "multiple colors",
+                       ".*skin.*" = "nude",
+                       ".*leopard.*" = "shape",
+                       ".*mocha.*" = "brown",
+                       ".*rainbow.*" = "multiple colors",
+                       ".*stripe.*" = "shape"))
 
 ## transform data type
 df$rating <- as.numeric(df$rating)
 df$review_count <- as.integer(df$review_count)
 
 ## transform missing data in mrp, price, rating, view count
-df$mrp[is.na(df$mrp)] <- round(mean(df$mrp, na.rm = TRUE), 2)
-df$price[is.na(df$price)] <- round(mean(df$price, na.rm = TRUE), 2)
 df$rating[is.na(df$rating)] <- min(df$rating, na.rm = TRUE)
 df$review_count[is.na(df$review_count)] <- min(df$review_count, na.rm = TRUE)
 
@@ -329,17 +380,17 @@ df$review_count[is.na(df$review_count)] <- min(df$review_count, na.rm = TRUE)
 ## drop NAs from "mrp" since one of the main goal is to look at price range
 df <- df %>% 
   filter(!category%in% c("chill", "collections")) %>% 
-  select(-last_word_chill, -last_word_collections, 
-         -product_category, -total_sizes, -available_size,
-         -style_attributes, -description)
+  select(-last_word_chill, -last_word_collections, -extra_last_word_collections)
 
 ## mutate new column - percentage of sales
 df_final <- df %>% 
-  select(product_name, mrp, price, pct_sales, category, color_group, brand_name, rating, review_count)
+  select(product_name, mrp_converted, price_converted, pct_sales, category, color_group, brand, rating, review_count)
 
 
 # output clean data
 write_csv(df_final, "../data/cleaned/cleaned_shiny.csv")
+write_csv(raw_df, "../data/raw/raw_full_df.csv")
+
 
 
 
