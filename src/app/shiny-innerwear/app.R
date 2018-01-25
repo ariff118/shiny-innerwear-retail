@@ -25,20 +25,22 @@ ui <- fluidPage(
    sidebarLayout(
      sidebarPanel(
        uiOutput('brandOutput'),
+       checkboxInput("allbrandInput", "Include all brands", value = TRUE),
        
        uiOutput('categoryOutput'),
+       checkboxInput("allcategoryInput", "Include all categories", value = FALSE),
        
        uiOutput('colorOutput'),
        
        sliderInput("ratingInput", "Average Rating Range",
                    min = 1,
-                   max = 10,
-                   value = c(3, 5), sep = ""),
+                   max = 5,
+                   value = c(2, 5), sep = ""),
        
        sliderInput("priceInput", "Price Range",
                    min = 1,
-                   max = 100,
-                   value = c(20, 50), sep = "")
+                   max = 620,
+                   value = c(50, 100), sep = "")
        
        # radioButtons("orderbyInput", "Order by",
        #              choices = c("Brand", "Price", "Percentage Sales"))
@@ -60,14 +62,14 @@ ui <- fluidPage(
    )
 )
 
-
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   
+  # set renderUI for interactive input selection
   output$brandOutput <- renderUI({
     selectInput('brandInput', 'Select Brand',
-                sort(unique(df$brand_name)),
-                selected = c("Macys-Hanky Panky", "Amazon-Hanky Panky"),
+                sort(unique(df$brand)),
+                selected = c("Amazon-Wacoal", "Macys-Wacoal", "Macys-Calvin Klein", "Amazon-Calvin Klein"),
                 multiple = TRUE)
   })
   
@@ -81,30 +83,64 @@ server <- function(input, output) {
   output$colorOutput <- renderUI({
     selectInput('colorInput', 'Select Product Color',
                 sort(unique(df$color_group)),
-                selected = c("red", "dragonfruit", "bright marine"),
+                selected = c("red", "black", "nude", "multiple colors"),
                 multiple = TRUE)
   })
   
+  
+  # filter data for visualization
   filtered <- reactive({
-    df %>% 
-      filter(brand_name %in% c(input$brandInput),
-             category %in% c(input$categoryInput),
-             color_group %in% c(input$colorInput),
-             rating >= input$ratingInput[1],
-             rating <= input$ratingInput[2],
-             price >= input$priceInput[1],
-             price <= input$priceInput[2]
-      )
+    if(input$allbrandInput){
+      df %>% 
+        filter(category %in% c(input$categoryInput),
+               color_group %in% c(input$colorInput),
+               rating >= input$ratingInput[1],
+               rating <= input$ratingInput[2],
+               price_converted >= input$priceInput[1],
+               price_converted <= input$priceInput[2])
+    }
+    else if (input$allcategoryInput){
+      df %>% 
+        filter(brand %in% c(input$brandInput),
+               color_group %in% c(input$colorInput),
+               rating >= input$ratingInput[1],
+               rating <= input$ratingInput[2],
+               price_converted >= input$priceInput[1],
+               price_converted <= input$priceInput[2])
+    }
+    else if ( (input$allcategoryInput) & (input$allbrandInput)){
+      df %>% 
+        filter(color_group %in% c(input$colorInput),
+               rating >= input$ratingInput[1],
+               rating <= input$ratingInput[2],
+               price_converted >= input$priceInput[1],
+               price_converted <= input$priceInput[2])
+    }
+    else {
+      df %>% 
+        filter(brand %in% c(input$brandInput),
+               category %in% c(input$categoryInput),
+               color_group %in% c(input$colorInput),
+               rating >= input$ratingInput[1],
+               rating <= input$ratingInput[2],
+               price_converted >= input$priceInput[1],
+               price_converted <= input$priceInput[2])
+    }
   })
-   
+  
+  ar <- reactive({
+    filtered() %>% 
+    group_by(brand) %>%
+    summarise(avg_rating = mean(rating))
+  })
   
   output$total_product <- renderPlot(
     {p1 <- ggplot(filtered(),
-                 aes(brand_name, color = brand_name)) +
+                 aes(brand, fill = brand)) +
           geom_bar() + 
           labs(title = "Total Product Per Brand",
                y = "products") +
-          scale_color_discrete(name = "") + 
+          scale_color_brewer(name = "", palette = "Set1") + 
           coord_flip() + 
           theme_bw()
     return(p1)
@@ -113,11 +149,11 @@ server <- function(input, output) {
   
   output$price_range <- renderPlot(
     {p2 <- ggplot(filtered(),
-                 aes(brand_name, price, color = brand_name)) +
+                 aes(brand, price_converted, color = brand)) +
       geom_boxplot() + 
       labs(title = "Price Range",
            y = "USD") + 
-      scale_color_discrete(name = "") + 
+      scale_color_brewer(name = "", palette = "Set1") + 
       coord_flip() + 
       theme_bw()
     return(p2)
@@ -125,14 +161,13 @@ server <- function(input, output) {
   )
   
   output$average_rating <- renderPlot(
-    {p3 <- ggplot(filtered(),
-                  aes(brand_name, mean(rating), color = brand_name)) +
+    {p3 <- ggplot(ar(), aes(brand, avg_rating, fill = brand)) +
           geom_bar(stat = "identity") +
-      scale_color_discrete(name = "") +
-      labs(title = "Average Rating") + 
-      coord_flip() + 
-      theme_bw()
-    return(p3)
+          scale_color_brewer(name = "", palette = "Set1") +
+          labs(title = "Average Rating", y = "average rating") + 
+          coord_flip() + 
+          theme_bw()
+     return(p3)
     }
   )
   
