@@ -118,6 +118,7 @@ server <- function(input, output, session){
                       'Select Brand',
                       choices = sort(unique(df$brand)),
                       selected = c(unique(df$brand)))
+    # ignoreInit = T
   )
 
   # when choose "Include all categories", update SelectInput to include all categories
@@ -129,6 +130,7 @@ server <- function(input, output, session){
                       choices = sort(unique(df$category)),
                       selected = c(unique(df$category))
     )
+    # ignoreInit = T
   )
   
   # when choose "Include all color options", update SelectInput to include all colors
