@@ -166,10 +166,10 @@ server <- function(input, output){
       summarise(tot_product = n())
   })
   
-  output$total_product <- renderPlot(
+  totprodplot <- reactive(
     {p1 <- ggplot(tot(),
                  aes(brand, fill = category)) +
-          geom_bar(position = "fill") + 
+          geom_bar() + 
           labs(title = "Total Options Per Brand",
                y = "options") +
           # scale_color_brewer(name = "", palette = "Set1") + 
@@ -179,8 +179,12 @@ server <- function(input, output){
     }
   )
   
+  output$total_product <- renderPlot(
+    {print(totprodplot())}
+  )
+  
   # create graph for price range
-  output$price_range <- renderPlot(
+  priceplot <- reactive(
     {p2 <- ggplot(filtered(),
                  aes(brand, price, group = category, color = category)) +
       geom_boxplot() + 
@@ -192,6 +196,10 @@ server <- function(input, output){
     return(p2)
     }
   )
+    
+  output$price_range <- renderPlot(
+    {print(priceplot())}
+  )
   
   # create graph for average rating
   ar <- reactive({
@@ -200,7 +208,7 @@ server <- function(input, output){
       summarise(avg_rating = mean(rating))
   })
   
-  output$average_rating <- renderPlot(
+  avgplot <- reactive(
     {p3 <- ggplot(ar(), aes(brand, avg_rating, fill = brand)) +
           geom_bar(stat = "identity") +
           scale_color_brewer(name = "", palette = "Set1") +
@@ -210,6 +218,10 @@ server <- function(input, output){
      return(p3)
     }
   )
+  
+  output$average_rating <- renderPlot({
+    print(avgplot())
+  })
   
   output$filtered_data <- renderDataTable(filtered(),
                                           options = list(pageLength = 5))
@@ -221,7 +233,7 @@ server <- function(input, output){
     filename = "total_options_per_brand.png",
     content = function(file) {
       device <- function(..., width, height) grDevices::png(..., width = width, height = height, res = 150, units = "in")
-      ggsave(filename = file, plot = output$total_product, device = device)
+      ggsave(filename = file, plot = totprodplot(), device = device)
     }
   )
   
@@ -230,7 +242,7 @@ server <- function(input, output){
     filename = "price_rangd_per_brand.png",
     content = function(file) {
       device <- function(..., width, height) grDevices::png(..., width = width, height = height, res = 150, units = "in")
-      ggsave(filename = file, plot = output$price_range, device = device)
+      ggsave(filename = file, plot = priceplot(), device = device)
     }
   )
   
@@ -239,7 +251,7 @@ server <- function(input, output){
     filename = "avg_rating_per_brand.png",
     content = function(file) {
       device <- function(..., width, height) grDevices::png(..., width = width, height = height, res = 150, units = "in")
-      ggsave(filename = file, plot = output$average_rating, device = device)
+      ggsave(filename = file, plot = avgplot(), device = device)
     }
   )
   
