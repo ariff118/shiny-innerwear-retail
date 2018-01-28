@@ -5,8 +5,8 @@ account: nhatha1306
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 259047
-bundleId: 1196661
+bundleId: 1196753
 url: https://nhatha1306.shinyapps.io/shiny-innerwear-market/
-when: 1517162386.53539
+when: 1517168128.43203
 asMultiple: FALSE
 asStatic: FALSE
