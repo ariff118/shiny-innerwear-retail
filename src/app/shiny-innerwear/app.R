@@ -12,6 +12,8 @@ library(shiny)
 library(tidyverse)
 
 df <- read_csv("cleaned_shiny.csv")
+df <- df %>% 
+  rename(mrp = mrp_converted, price = price_converted, color = color_group)
 
 #===================#
 
@@ -39,7 +41,7 @@ ui <- fluidPage(
        
        sliderInput("priceInput", "Price Range",
                    min = 1,
-                   max = 620,
+                   max = 300,
                    value = c(50, 100), sep = "")
        
        # radioButtons("orderbyInput", "Order by",
@@ -49,21 +51,28 @@ ui <- fluidPage(
      
      # Show a plot of the generated distribution
      mainPanel(
+       downloadButton("tot_prod_graph", "Download graph"),
        plotOutput("total_product"),
        br(), br(),
+       downloadButton("price_graph", "Download graph"),
        plotOutput("price_range"),
        br(), br(),
+       downloadButton("rating_graph", "Download graph"),
        plotOutput("average_rating"),
        br(), br(),
        # plotOutput("total_reviews"),
        # br(), br(),
+       downloadButton("download_data", "Download data"),
        dataTableOutput("filtered_data")
      )
    )
 )
 
+
+#===================#
+
 # Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output){
   
   # set renderUI for interactive input selection
   output$brandOutput <- renderUI({
@@ -82,7 +91,7 @@ server <- function(input, output) {
   
   output$colorOutput <- renderUI({
     selectInput('colorInput', 'Select Product Color',
-                sort(unique(df$color_group)),
+                sort(unique(df$color)),
                 selected = c("red", "black", "nude", "multiple colors"),
                 multiple = TRUE)
   })
@@ -90,75 +99,106 @@ server <- function(input, output) {
   
   # filter data for visualization
   filtered <- reactive({
-    if(input$allbrandInput){
-      df %>% 
-        filter(category %in% c(input$categoryInput),
-               color_group %in% c(input$colorInput),
-               rating >= input$ratingInput[1],
-               rating <= input$ratingInput[2],
-               price_converted >= input$priceInput[1],
-               price_converted <= input$priceInput[2])
-    }
-    else if (input$allcategoryInput){
-      df %>% 
-        filter(brand %in% c(input$brandInput),
-               color_group %in% c(input$colorInput),
-               rating >= input$ratingInput[1],
-               rating <= input$ratingInput[2],
-               price_converted >= input$priceInput[1],
-               price_converted <= input$priceInput[2])
-    }
-    else if ( (input$allcategoryInput) & (input$allbrandInput)){
-      df %>% 
-        filter(color_group %in% c(input$colorInput),
-               rating >= input$ratingInput[1],
-               rating <= input$ratingInput[2],
-               price_converted >= input$priceInput[1],
-               price_converted <= input$priceInput[2])
-    }
-    else {
+    # if(input$allbrandInput){
+    #   df %>% 
+    #     filter(category %in% c(input$categoryInput),
+    #            color_group %in% c(input$colorInput),
+    #            rating >= input$ratingInput[1],
+    #            rating <= input$ratingInput[2],
+    #            price >= input$priceInput[1],
+    #            price <= input$priceInput[2])
+    # }
+    # else if (input$allcategoryInput){
+    #   df %>% 
+    #     filter(brand %in% c(input$brandInput),
+    #            color_group %in% c(input$colorInput),
+    #            rating >= input$ratingInput[1],
+    #            rating <= input$ratingInput[2],
+    #            price >= input$priceInput[1],
+    #            price <= input$priceInput[2])
+    # }
+    # else if ( (input$allcategoryInput) & (input$allbrandInput)){
+    #   df %>% 
+    #     filter(color_group %in% c(input$colorInput),
+    #            rating >= input$ratingInput[1],
+    #            rating <= input$ratingInput[2],
+    #            price >= input$priceInput[1],
+    #            price <= input$priceInput[2])
+    # }
+    # else {
       df %>% 
         filter(brand %in% c(input$brandInput),
                category %in% c(input$categoryInput),
-               color_group %in% c(input$colorInput),
+               color %in% c(input$colorInput),
                rating >= input$ratingInput[1],
                rating <= input$ratingInput[2],
-               price_converted >= input$priceInput[1],
-               price_converted <= input$priceInput[2])
-    }
+               price >= input$priceInput[1],
+               price <= input$priceInput[2])
+    # }
   })
   
-  ar <- reactive({
+  # when choose "Include all categories", update SelectInput to include all categories
+  # observe({
+  #   if (input$allcategoryInput){
+  #     updateSelectInput(session,
+  #                       inputId = "categoryInput",
+  #                       sort(unique(df$category)),
+  #                       selected = c(unique(df$category))
+  #                       )
+  #   }
+  # })
+  # 
+  # when choose "Include all brands", update SelectInput to include all brands
+  # observe({
+  #   if (input$allbrandInput){
+  #     updateSelectInput(session,
+  #                       inputId = "brandInput",
+  #                       sort(unique(df$brand)),
+  #                       selected = c(unique(df$brand))
+  #                       )
+  #   }
+  # })
+  
+  # create graph for total options
+  tot <- reactive({
     filtered() %>% 
-    group_by(brand) %>%
-    summarise(avg_rating = mean(rating))
+      group_by(brand, category) %>%
+      summarise(tot_product = n())
   })
   
   output$total_product <- renderPlot(
-    {p1 <- ggplot(filtered(),
-                 aes(brand, fill = brand)) +
-          geom_bar() + 
-          labs(title = "Total Product Per Brand",
-               y = "products") +
-          scale_color_brewer(name = "", palette = "Set1") + 
+    {p1 <- ggplot(tot(),
+                 aes(brand, fill = category)) +
+          geom_bar(position = "fill") + 
+          labs(title = "Total Options Per Brand",
+               y = "options") +
+          # scale_color_brewer(name = "", palette = "Set1") + 
           coord_flip() + 
           theme_bw()
     return(p1)
     }
   )
   
+  # create graph for price range
   output$price_range <- renderPlot(
     {p2 <- ggplot(filtered(),
-                 aes(brand, price_converted, color = brand)) +
+                 aes(brand, price, group = category, color = category)) +
       geom_boxplot() + 
       labs(title = "Price Range",
            y = "USD") + 
-      scale_color_brewer(name = "", palette = "Set1") + 
+      # scale_color_brewer(name = "", palette = "Set1") + 
       coord_flip() + 
       theme_bw()
     return(p2)
     }
   )
+  
+  # create graph for average rating
+  ar <- reactive({
+    filtered() %>% 
+      group_by(brand) %>%
+      summarise(avg_rating = mean(rating))
+  })
   
   output$average_rating <- renderPlot(
     {p3 <- ggplot(ar(), aes(brand, avg_rating, fill = brand)) +
@@ -174,6 +214,42 @@ server <- function(input, output) {
   output$filtered_data <- renderDataTable(filtered(),
                                           options = list(pageLength = 5))
   
+ 
+  # download graph and data
+  ## total options graph
+  output$tot_prod_graph <- downloadHandler(
+    filename = "total_options_per_brand.png",
+    content = function(file) {
+      device <- function(..., width, height) grDevices::png(..., width = width, height = height, res = 150, units = "in")
+      ggsave(filename = file, plot = output$total_product, device = device)
+    }
+  )
+  
+  ## price range graph
+  output$price_graph <- downloadHandler(
+    filename = "price_rangd_per_brand.png",
+    content = function(file) {
+      device <- function(..., width, height) grDevices::png(..., width = width, height = height, res = 150, units = "in")
+      ggsave(filename = file, plot = output$price_range, device = device)
+    }
+  )
+  
+  ## average rating graph
+  output$rating_graph <- downloadHandler(
+    filename = "avg_rating_per_brand.png",
+    content = function(file) {
+      device <- function(..., width, height) grDevices::png(..., width = width, height = height, res = 150, units = "in")
+      ggsave(filename = file, plot = output$average_rating, device = device)
+    }
+  )
+  
+  ## dowload filtered data
+  output$download_data <- downloadHandler(
+    filename = "innerwear_filtered.csv",
+    content = function(file) {
+      write.csv(filtered(), file, row.names = FALSE)
+    }
+  )
   
 }
 
