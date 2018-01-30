@@ -279,6 +279,8 @@ df$color <- df$color %>%
 df$color <- as.factor(df$color)
 color_list <- data.frame(levels(df$color))  
 
+color_list <- data.frame(unique(df$color_group))
+
 df$color_group <- df$color %>% 
   str_replace_all(., c(".*white.*" = "white",
                        ".*turquoise.*" = "turquoise",
@@ -366,7 +368,20 @@ df$color_group <- df$color %>%
                        ".*leopard.*" = "shape",
                        ".*mocha.*" = "brown",
                        ".*rainbow.*" = "multiple colors",
-                       ".*stripe.*" = "shape"))
+                       ".*stripe.*" = "shape",
+                       ".*pine.*" = "green",
+                       ".*coastal.*" = "multiple colors",
+                       ".*pale.*" = "nude",
+                       ".*lavender.*" = "purple",
+                       ".*bronze.*" = ".*bronze.*",
+                       ".*denim.*" = "denim",
+                       ".*wine.*" = "red",
+                       ".*orange.*" = "orange",
+                       ".*coconut.*" = "white",
+                       ".*gradient.*" = "multiple colors",
+                       ".*lace.*" = "multiple colors",
+                       ".*sea.*" = "blue",
+                       ))
 
 ## transform data type
 df$rating <- as.numeric(df$rating)
